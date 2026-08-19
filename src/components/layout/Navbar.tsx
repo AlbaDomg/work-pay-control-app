@@ -1,16 +1,13 @@
 import React from 'react';
-import { useApp } from '../../context/AppContext';
-import { Plus, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { openWorkModal, openClientModal } = useApp();
-
   return (
     <header
       style={{
         background: 'var(--bg-nav)',
         borderBottom: '1px solid var(--border-color)',
-        padding: '14px 24px',
+        padding: '12px 20px',
         position: 'sticky',
         top: 0,
         zIndex: 30,
@@ -32,29 +29,15 @@ export const Navbar: React.FC = () => {
             color: '#fff',
             fontWeight: 800,
             boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)',
+            flexShrink: 0,
           }}
         >
           <Wallet size={20} />
         </div>
         <div>
-          <h2 style={{ fontSize: '1.1rem', margin: 0, lineHeight: 1.2 }}>Control de Pagos</h2>
+          <h2 style={{ fontSize: '1.1rem', margin: 0, lineHeight: 1.2, fontWeight: 800 }}>Control de Pagos</h2>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Gestión de Horas & Cobros</span>
         </div>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() => openClientModal()}
-          style={{ display: 'none' }} // Visible en pantallas más amplias vía media query si se desea
-        >
-          + Nuevo Cliente
-        </button>
-
-        <button className="btn btn-primary" onClick={() => openWorkModal()}>
-          <Plus size={18} />
-          <span>Registrar trabajo</span>
-        </button>
       </div>
     </header>
   );
