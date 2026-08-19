@@ -493,3 +493,127 @@ select.input {
   align-items: center;
   gap: 12px;
 }
+
+/* Tarjetas de Jornadas Adaptativas / Mobile Responsive */
+.work-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.work-card:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-md);
+}
+
+.work-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.work-card-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.work-hours-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.work-client-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.work-date-line {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 3px;
+}
+
+.work-price-block {
+  text-align: right;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.work-price-amount {
+  font-weight: 900;
+  font-size: 1.15rem;
+  color: var(--primary);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.work-price-rate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.work-card-extra {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-input);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.work-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .work-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+  }
+
+  .work-card-top {
+    flex: 1;
+    align-items: center;
+  }
+
+  .work-card-bottom {
+    padding-top: 0;
+    border-top: none;
+    flex-shrink: 0;
+  }
+}

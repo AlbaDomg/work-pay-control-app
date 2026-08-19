@@ -120,69 +120,52 @@ export const WorkEntryListView: React.FC = () => {
             const currency = client ? client.currency : 'EUR';
 
             return (
-              <div
-                key={entry.id}
-                className="card card-hover"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '16px',
-                  padding: '16px 20px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div
-                    style={{
-                      width: '42px',
-                      height: '42px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--primary-light)',
-                      color: 'var(--primary)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '0.85rem',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {formatHours(entry.hours)}
+              <div key={entry.id} className="work-card">
+                {/* Bloque Superior: Cliente + Horas + Fecha + Precio */}
+                <div className="work-card-top">
+                  <div className="work-card-info">
+                    <div className="work-hours-badge">
+                      {formatHours(entry.hours)}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="work-client-title">{client?.name || 'Cliente'}</div>
+                      <div className="work-date-line">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <Calendar size={12} /> {formatDateSpanish(entry.date, { short: true, includeYear: true })}
+                        </span>
+                        {entry.startTime && entry.endTime ? (
+                          <span>• {entry.startTime} - {entry.endTime}</span>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '1rem' }}>{client?.name || 'Cliente'}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Calendar size={12} /> {formatDateSpanish(entry.date, { short: true, includeYear: true })}
-                      </span>
-                      {entry.startTime && entry.endTime ? (
-                        <span>
-                          • {entry.startTime} - {entry.endTime}
-                        </span>
-                      ) : null}
+                  <div className="work-price-block">
+                    <div className="work-price-amount">
+                      {formatCurrency(entry.totalAmount ?? entry.amount, currency)}
                     </div>
-                    {entry.description && (
-                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        {entry.description}
-                      </div>
-                    )}
+                    <div className="work-price-rate">
+                      {entry.mainWorkerName || 'Principal'}: {formatCurrency(entry.hourlyRate, currency)}/h
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bloque Extra: Descripción y/o Ayudantes si existen */}
+                {(entry.description || (entry.collaborators && entry.collaborators.length > 0)) && (
+                  <div className="work-card-extra">
+                    {entry.description && <div>{entry.description}</div>}
                     {entry.collaborators && entry.collaborators.length > 0 && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '2px' }}>
+                      <div style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.78rem' }}>
                         Ayudantes: {entry.collaborators.map(c => `${c.name} (${c.hours}h)`).join(', ')}
                       </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div>
-                    <div style={{ fontWeight: 900, fontSize: '1.15rem', color: 'var(--primary)' }}>
-                      {formatCurrency(entry.totalAmount ?? entry.amount, currency)}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {entry.mainWorkerName || 'Principal'}: {formatCurrency(entry.hourlyRate, currency)}/h
-                    </div>
+                {/* Bloque Inferior: Botones de Acción */}
+                <div className="work-card-bottom">
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Registrado
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px' }}>
@@ -192,6 +175,7 @@ export const WorkEntryListView: React.FC = () => {
                       title="Editar jornada"
                     >
                       <Edit size={14} />
+                      <span>Editar</span>
                     </button>
                     <button
                       className="btn btn-sm btn-danger"
@@ -205,6 +189,7 @@ export const WorkEntryListView: React.FC = () => {
                       title="Eliminar jornada"
                     >
                       <Trash2 size={14} />
+                      <span>Borrar</span>
                     </button>
                   </div>
                 </div>
