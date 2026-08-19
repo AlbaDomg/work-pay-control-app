@@ -328,24 +328,13 @@ export const WorkEntryModal: React.FC = () => {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {entryCollaborators.map(c => (
-                    <div
-                      key={c.id}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '2fr 1fr 1fr auto',
-                        gap: '8px',
-                        alignItems: 'center',
-                        background: 'var(--bg-input)',
-                        padding: '8px 10px',
-                        borderRadius: 'var(--radius-sm)',
-                      }}
-                    >
+                    <div key={c.id} className="helper-row">
                       {/* Nombre del Ayudante (desplegable de guardados o texto libre) */}
-                      <div>
+                      <div className="helper-name-col">
                         {collaborators.length > 0 && !(c as any).isCustom ? (
                           <select
                             className="input"
-                            style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                            style={{ padding: '8px 10px', fontSize: '0.85rem' }}
                             value={c.name}
                             onChange={e => {
                               const val = e.target.value;
@@ -375,7 +364,7 @@ export const WorkEntryModal: React.FC = () => {
                             <input
                               type="text"
                               className="input"
-                              style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                              style={{ padding: '8px 10px', fontSize: '0.85rem' }}
                               placeholder="Nombre del ayudante"
                               value={c.name}
                               onChange={e => handleUpdateCollaborator(c.id, 'name', e.target.value)}
@@ -385,7 +374,7 @@ export const WorkEntryModal: React.FC = () => {
                                 type="button"
                                 title="Volver a la lista"
                                 className="btn btn-sm btn-secondary"
-                                style={{ padding: '4px 6px', fontSize: '0.7rem' }}
+                                style={{ padding: '4px 8px', fontSize: '0.75rem', flexShrink: 0 }}
                                 onClick={() => handleUpdateCollaborator(c.id, 'isCustom', false)}
                               >
                                 Lista
@@ -395,48 +384,46 @@ export const WorkEntryModal: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Horas */}
-                      <div>
+                      {/* Horas, Tarifa / h y Eliminar */}
+                      <div className="helper-inputs-col">
                         <input
                           type="number"
                           step="any"
                           className="input"
-                          style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                          style={{ padding: '8px 10px', fontSize: '0.85rem' }}
                           placeholder="Horas"
                           value={c.hours ?? ''}
                           onChange={e => handleUpdateCollaborator(c.id, 'hours', e.target.value)}
                           onFocus={e => e.target.select()}
                         />
-                      </div>
 
-                      {/* Tarifa / h */}
-                      <div>
                         <input
                           type="number"
                           step="any"
                           className="input"
-                          style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                          style={{ padding: '8px 10px', fontSize: '0.85rem' }}
                           placeholder="€/h"
                           value={c.hourlyRate ?? ''}
                           onChange={e => handleUpdateCollaborator(c.id, 'hourlyRate', e.target.value)}
                           onFocus={e => e.target.select()}
                         />
-                      </div>
 
-                      {/* Eliminar */}
-                      <button
-                        type="button"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--status-overdue)',
-                          cursor: 'pointer',
-                          padding: '4px',
-                        }}
-                        onClick={() => handleRemoveCollaborator(c.id)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                        <button
+                          type="button"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--status-overdue)',
+                            cursor: 'pointer',
+                            padding: '6px',
+                            flexShrink: 0,
+                          }}
+                          onClick={() => handleRemoveCollaborator(c.id)}
+                          title="Eliminar ayudante"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

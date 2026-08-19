@@ -617,3 +617,43 @@ select.input {
     flex-shrink: 0;
   }
 }
+
+/* Fila de Ayudante Adaptativa en Modal */
+.helper-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-input);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.helper-name-col {
+  width: 100%;
+}
+
+.helper-inputs-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.helper-inputs-col input {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 520px) {
+  .helper-row {
+    flex-direction: row;
+    align-items: center;
+  }
+  .helper-name-col {
+    flex: 2;
+  }
+  .helper-inputs-col {
+    flex: 2;
+  }
+}
