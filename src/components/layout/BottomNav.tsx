@@ -11,10 +11,9 @@ export const BottomNav: React.FC = () => {
   const items = [
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
     { id: 'billing', label: 'Cobros', icon: Receipt, badge: alertCount },
-    { id: 'work', label: 'Trabajo', icon: Clock },
     { id: 'add', label: '', icon: Plus, isCta: true },
+    { id: 'work', label: 'Trabajo', icon: Clock },
     { id: 'clients', label: 'Clientes', icon: Users },
-    { id: 'settings', label: 'Ajustes', icon: Settings },
   ];
 
   const handleOpenWork = () => {
