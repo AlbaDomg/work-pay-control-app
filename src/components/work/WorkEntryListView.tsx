@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { formatCurrency, formatHours } from '../../engine/moneyEngine';
 import { formatDateSpanish } from '../../utils/dateUtils';
-import { Clock, Plus, Search, Edit, Trash2, Calendar } from 'lucide-react';
+import { Clock, Plus, Search, Edit, Trash2, Calendar, Package } from 'lucide-react';
 
 export const WorkEntryListView: React.FC = () => {
   const {
@@ -150,15 +150,21 @@ export const WorkEntryListView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bloque Extra: Descripción y/o Ayudantes si existen */}
-                {(entry.description || (entry.collaborators && entry.collaborators.length > 0)) && (
-                  <div className="work-card-extra">
+                {/* Bloque Extra: Descripción, Ayudantes y Materiales si existen */}
+                {(entry.description || (entry.collaborators && entry.collaborators.length > 0) || (entry.materialCost && entry.materialCost > 0)) && (
+                  <div className="work-card-extra" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {entry.description && <div>{entry.description}</div>}
                     {entry.collaborators && entry.collaborators.length > 0 && (
                       <div style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.78rem' }}>
                         Ayudantes: {entry.collaborators.map(c => `${c.name} (${c.hours}h)`).join(', ')}
                       </div>
                     )}
+                    {entry.materialCost && entry.materialCost > 0 ? (
+                      <div style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Package size={13} color="var(--primary)" />
+                        <span>Materiales: {formatCurrency(entry.materialCost, currency)}</span>
+                      </div>
+                    ) : null}
                   </div>
                 )}
 

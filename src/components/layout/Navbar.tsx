@@ -1,26 +1,41 @@
 import React from 'react';
-import { Wallet } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
+import { Plus, Wrench, Sparkles } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
+  const { userProfile, openWorkModal } = useApp();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 13) return '¡Buenos días';
+    if (hour >= 13 && hour < 20) return '¡Buenas tardes';
+    return '¡Buenas noches';
+  };
+
+  const workerFirstName = (userProfile.mainWorkerName || 'Juan').split(' ')[0];
+
   return (
     <header
       style={{
         background: 'var(--bg-nav)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
         borderBottom: '1px solid var(--border-color)',
-        padding: '12px 20px',
+        padding: '12px 24px',
         position: 'sticky',
         top: 0,
-        zIndex: 30,
+        zIndex: 40,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        boxShadow: 'var(--shadow-sm)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div
           style={{
-            width: '36px',
-            height: '36px',
+            width: '38px',
+            height: '38px',
             borderRadius: 'var(--radius-md)',
             background: 'var(--gradient-primary)',
             display: 'flex',
@@ -28,16 +43,31 @@ export const Navbar: React.FC = () => {
             justifyContent: 'center',
             color: '#fff',
             fontWeight: 800,
-            boxShadow: '0 4px 10px rgba(99, 102, 241, 0.3)',
+            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
             flexShrink: 0,
           }}
         >
-          <Wallet size={20} />
+          <Wrench size={20} />
         </div>
         <div>
-          <h2 style={{ fontSize: '1.1rem', margin: 0, lineHeight: 1.2, fontWeight: 800 }}>Control de Pagos</h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Gestión de Horas & Cobros</span>
+          <h2 style={{ fontSize: '1.05rem', margin: 0, lineHeight: 1.2, fontWeight: 800, letterSpacing: '-0.02em' }}>
+            {getGreeting()}, {workerFirstName}! 👋
+          </h2>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Sparkles size={12} color="var(--primary)" /> Control de Horas & Cobros de Reformas
+          </span>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => openWorkModal()}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Plus size={16} />
+          <span>+ Registrar Trabajo</span>
+        </button>
       </div>
     </header>
   );

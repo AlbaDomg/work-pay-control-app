@@ -18,19 +18,33 @@ function formatEntryBreakdown(entry: WorkEntry, currency: string): string {
   const entryTotal = entry.totalAmount ?? entry.amount;
   const desc = entry.description ? ` (${entry.description})` : '';
 
-  if (entry.collaborators && entry.collaborators.length > 0) {
-    const mainWorker = entry.mainWorkerName || 'Trabajador principal';
-    const mainLine = `• ${mainWorker}: ${formatHours(entry.hours)} × ${formatCurrency(entry.hourlyRate, currency)}/h = ${formatCurrency(entry.amount, currency)}`;
-    
-    const collabLines = entry.collaborators.map(c => {
-      const cHours = Number(c.hours) || 0;
-      const rawRate = Number(c.hourlyRate) || 0;
-      const cRate = rawRate > 0 ? rawRate : (cHours > 0 && c.amount > 0 ? c.amount / cHours : 0);
-      const cName = c.name || 'Ayudante';
-      return `• ${cName} (Ayudante): ${formatHours(cHours)} × ${formatCurrency(cRate, currency)}/h = ${formatCurrency(c.amount, currency)}`;
-    }).join('\n');
+  const hasCollabs = entry.collaborators && entry.collaborators.length > 0;
+  const hasMaterials = Boolean(entry.materialCost && entry.materialCost > 0);
 
-    return `${dateFormatted}${desc}:\n${mainLine}\n${collabLines}\n  Subtotal día: ${formatCurrency(entryTotal, currency)}`;
+  if (hasCollabs || hasMaterials) {
+    const lines: string[] = [];
+
+    if (hasCollabs) {
+      const mainWorker = entry.mainWorkerName || 'Trabajador principal';
+      lines.push(`• ${mainWorker}: ${formatHours(entry.hours)} × ${formatCurrency(entry.hourlyRate, currency)}/h = ${formatCurrency(entry.amount, currency)}`);
+      
+      entry.collaborators!.forEach(c => {
+        const cHours = Number(c.hours) || 0;
+        const rawRate = Number(c.hourlyRate) || 0;
+        const cRate = rawRate > 0 ? rawRate : (cHours > 0 && c.amount > 0 ? c.amount / cHours : 0);
+        const cName = c.name || 'Ayudante';
+        lines.push(`• ${cName} (Ayudante): ${formatHours(cHours)} × ${formatCurrency(cRate, currency)}/h = ${formatCurrency(c.amount, currency)}`);
+      });
+    } else {
+      const mainWorkerPrefix = entry.mainWorkerName ? `${entry.mainWorkerName}: ` : '';
+      lines.push(`• Mano de obra (${mainWorkerPrefix}${formatHours(entry.hours)} × ${formatCurrency(entry.hourlyRate, currency)}/h): ${formatCurrency(entry.amount, currency)}`);
+    }
+
+    if (hasMaterials) {
+      lines.push(`• Materiales: ${formatCurrency(entry.materialCost!, currency)}`);
+    }
+
+    return `${dateFormatted}${desc}:\n${lines.join('\n')}\n  Subtotal día: ${formatCurrency(entryTotal, currency)}`;
   }
 
   const mainWorkerPrefix = entry.mainWorkerName ? `${entry.mainWorkerName}: ` : '';

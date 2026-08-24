@@ -239,11 +239,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = ({ clientId, on
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       {entry.description || 'Sin descripción'}
                     </div>
+                    {entry.materialCost && entry.materialCost > 0 ? (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '2px' }}>
+                        + Materiales: {formatCurrency(entry.materialCost, client.currency)}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 800, color: 'var(--primary)' }}>
-                      {formatCurrency(entry.amount, client.currency)}
+                      {formatCurrency(entry.totalAmount ?? entry.amount, client.currency)}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {formatHours(entry.hours)} @ {formatCurrency(entry.hourlyRate, client.currency)}/h

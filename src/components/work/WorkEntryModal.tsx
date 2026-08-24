@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { calculateHoursFromTimeRange, getTodayFormatted } from '../../utils/dateUtils';
 import { formatCurrency } from '../../engine/moneyEngine';
-import { X, Clock, Calculator, UserCheck, Plus, Trash2 } from 'lucide-react';
+import { X, Clock, Calculator, UserCheck, Plus, Trash2, Package } from 'lucide-react';
 import { WorkEntryCollaborator } from '../../types';
 
 export const WorkEntryModal: React.FC = () => {
@@ -27,6 +27,7 @@ export const WorkEntryModal: React.FC = () => {
   const [manualHours, setManualHours] = useState<string | number>(5);
   const [mainWorkerName, setMainWorkerName] = useState<string>('');
   const [entryCollaborators, setEntryCollaborators] = useState<WorkEntryCollaborator[]>([]);
+  const [materialCost, setMaterialCost] = useState<string | number>(0);
   const [description, setDescription] = useState<string>('');
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export const WorkEntryModal: React.FC = () => {
       setDescription(editingWorkEntry.description || '');
       setMainWorkerName(editingWorkEntry.mainWorkerName || userProfile.mainWorkerName || 'Juan');
       setEntryCollaborators(editingWorkEntry.collaborators || []);
+      setMaterialCost(editingWorkEntry.materialCost ?? 0);
 
       if (editingWorkEntry.startTime && editingWorkEntry.endTime) {
         setMode('timer');
@@ -56,6 +58,7 @@ export const WorkEntryModal: React.FC = () => {
       setManualHours(5);
       setMainWorkerName(userProfile.mainWorkerName || 'Juan');
       setEntryCollaborators([]);
+      setMaterialCost(0);
       setDescription('');
     }
   }, [editingWorkEntry, isWorkModalOpen, userProfile]);
@@ -80,7 +83,8 @@ export const WorkEntryModal: React.FC = () => {
     return sum + itemAmount;
   }, 0);
 
-  const grandTotalAmount = Math.round((mainWorkerAmount + collabsTotalAmount) * 100) / 100;
+  const parsedMaterialCost = Math.max(0, parseFloat(String(materialCost)) || 0);
+  const grandTotalAmount = Math.round((mainWorkerAmount + collabsTotalAmount + parsedMaterialCost) * 100) / 100;
 
   const handleAddCollaborator = () => {
     const newCollab: WorkEntryCollaborator = {
@@ -126,6 +130,7 @@ export const WorkEntryModal: React.FC = () => {
       amount: mainWorkerAmount,
       mainWorkerName: mainWorkerName.trim() || userProfile.mainWorkerName || 'Juan',
       collaborators: entryCollaborators,
+      materialCost: parsedMaterialCost,
       totalAmount: grandTotalAmount,
       description,
     });
@@ -198,8 +203,8 @@ export const WorkEntryModal: React.FC = () => {
 
             {/* Selector de Modo (Horas o Inicio/Fin) */}
             <div>
-              <label className="form-label" style={{ marginBottom: '6px', display: 'block' }}>
-                Tramo Horario o Horas Directas
+              <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>
+                Modo de Registro de Jornada
               </label>
               <div
                 style={{
@@ -207,6 +212,7 @@ export const WorkEntryModal: React.FC = () => {
                   background: 'var(--bg-input)',
                   borderRadius: 'var(--radius-md)',
                   padding: '4px',
+                  border: '1px solid var(--border-color)',
                 }}
               >
                 <button
@@ -214,34 +220,38 @@ export const WorkEntryModal: React.FC = () => {
                   onClick={() => setMode('timer')}
                   style={{
                     flex: 1,
-                    padding: '8px',
+                    padding: '9px 12px',
                     borderRadius: 'var(--radius-sm)',
                     border: 'none',
-                    background: mode === 'timer' ? 'var(--bg-card)' : 'transparent',
-                    color: mode === 'timer' ? 'var(--primary)' : 'var(--text-secondary)',
-                    fontWeight: mode === 'timer' ? 700 : 500,
+                    background: mode === 'timer' ? 'var(--gradient-primary)' : 'transparent',
+                    color: mode === 'timer' ? '#ffffff' : 'var(--text-secondary)',
+                    fontWeight: mode === 'timer' ? 800 : 600,
                     cursor: 'pointer',
                     fontSize: '0.85rem',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: mode === 'timer' ? '0 4px 12px rgba(99, 102, 241, 0.35)' : 'none',
                   }}
                 >
-                  Hora Inicio / Fin
+                  ⏱️ Hora Inicio / Fin
                 </button>
                 <button
                   type="button"
                   onClick={() => setMode('manual')}
                   style={{
                     flex: 1,
-                    padding: '8px',
+                    padding: '9px 12px',
                     borderRadius: 'var(--radius-sm)',
                     border: 'none',
-                    background: mode === 'manual' ? 'var(--bg-card)' : 'transparent',
-                    color: mode === 'manual' ? 'var(--primary)' : 'var(--text-secondary)',
-                    fontWeight: mode === 'manual' ? 700 : 500,
+                    background: mode === 'manual' ? 'var(--gradient-primary)' : 'transparent',
+                    color: mode === 'manual' ? '#ffffff' : 'var(--text-secondary)',
+                    fontWeight: mode === 'manual' ? 800 : 600,
                     cursor: 'pointer',
                     fontSize: '0.85rem',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: mode === 'manual' ? '0 4px 12px rgba(99, 102, 241, 0.35)' : 'none',
                   }}
                 >
-                  Horas Manuales
+                  ✏️ Horas Manuales
                 </button>
               </div>
             </div>
@@ -430,6 +440,27 @@ export const WorkEntryModal: React.FC = () => {
               )}
             </div>
 
+            {/* SECCIÓN DE GASTOS EN MATERIALES */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Package size={16} color="var(--primary)" />
+                <span>Gasto en Materiales ({currentCurrency}) (opcional)</span>
+              </label>
+              <input
+                type="number"
+                step="any"
+                min="0"
+                className="input"
+                placeholder="0.00"
+                value={materialCost}
+                onChange={e => setMaterialCost(e.target.value)}
+                onFocus={e => e.target.select()}
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
+                Este importe se sumará al total facturado al cliente en este trabajo.
+              </span>
+            </div>
+
             {/* Descripción opcional */}
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Descripción del trabajo (opcional)</label>
@@ -465,6 +496,11 @@ export const WorkEntryModal: React.FC = () => {
                 {collabsTotalAmount > 0 && (
                   <div>
                     Ayudante(s): <strong>{formatCurrency(collabsTotalAmount, currentCurrency)}</strong>
+                  </div>
+                )}
+                {parsedMaterialCost > 0 && (
+                  <div>
+                    Materiales: <strong>+{formatCurrency(parsedMaterialCost, currentCurrency)}</strong>
                   </div>
                 )}
                 <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '2px' }}>

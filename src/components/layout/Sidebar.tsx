@@ -8,10 +8,12 @@ import {
   Calendar,
   BarChart3,
   Settings,
+  Wrench,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, billingPeriods } = useApp();
+  const { activeTab, setActiveTab, billingPeriods, userProfile } = useApp();
 
   // Contar cuántos periodos requieren atención (pendientes de enviar o vencidos)
   const alertCount = billingPeriods.filter(p => p.status === 'pending_send' || p.status === 'overdue').length;
@@ -29,12 +31,15 @@ export const Sidebar: React.FC = () => {
   return (
     <aside
       style={{
-        width: '260px',
+        width: '270px',
         background: 'var(--bg-sidebar)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         borderRight: '1px solid var(--border-color)',
         display: 'none',
         flexDirection: 'column',
-        padding: '24px 16px',
+        padding: '24px 18px',
+        zIndex: 50,
       }}
       className="sidebar-desktop"
     >
@@ -46,11 +51,34 @@ export const Sidebar: React.FC = () => {
         }
       `}</style>
 
-      <div style={{ padding: '0 12px 24px 12px' }}>
-        <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 800 }}>Control de Pagos</h3>
-        <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '2px' }}>Panel de Control Personal</p>
+      {/* Marca / Logo */}
+      <div style={{ padding: '4px 10px 24px 10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--gradient-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+          }}
+        >
+          <Wrench size={22} />
+        </div>
+        <div>
+          <h3 style={{ color: '#ffffff', fontSize: '1.15rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+            ControlPagos
+          </h3>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <ShieldCheck size={12} color="var(--status-paid)" /> PRO • Reformas
+          </span>
+        </div>
       </div>
 
+      {/* Navegación */}
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
         {navItems.map(item => {
           const Icon = item.icon;
@@ -63,30 +91,32 @@ export const Sidebar: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '12px 14px',
+                padding: '12px 16px',
                 borderRadius: 'var(--radius-md)',
                 background: isActive ? 'var(--gradient-primary)' : 'transparent',
-                color: isActive ? '#ffffff' : '#94a3b8',
+                color: isActive ? '#ffffff' : 'var(--text-muted)',
                 border: 'none',
                 cursor: 'pointer',
-                fontWeight: isActive ? 600 : 500,
-                fontSize: '0.9rem',
-                transition: 'all 0.15s ease',
+                fontWeight: isActive ? 700 : 500,
+                fontSize: '0.92rem',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: isActive ? '0 4px 16px rgba(99, 102, 241, 0.4)' : 'none',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Icon size={19} />
+                <Icon size={20} color={isActive ? '#ffffff' : 'currentColor'} />
                 <span>{item.label}</span>
               </div>
               {item.badge && item.badge > 0 ? (
                 <span
                   style={{
-                    background: isActive ? '#fff' : 'var(--status-overdue)',
-                    color: isActive ? 'var(--primary)' : '#fff',
-                    fontSize: '0.7rem',
+                    background: isActive ? '#ffffff' : 'var(--status-overdue)',
+                    color: isActive ? 'var(--primary)' : '#ffffff',
+                    fontSize: '0.72rem',
                     fontWeight: 800,
-                    padding: '2px 7px',
-                    borderRadius: '99px',
+                    padding: '2px 8px',
+                    borderRadius: 'var(--radius-full)',
+                    boxShadow: '0 0 10px currentColor',
                   }}
                 >
                   {item.badge}
@@ -96,6 +126,47 @@ export const Sidebar: React.FC = () => {
           );
         })}
       </nav>
+
+      {/* Perfil del Usuario / Trabajador en Pie de Sidebar */}
+      <div
+        style={{
+          marginTop: 'auto',
+          padding: '12px 14px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <div
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--primary-light)',
+            border: '2px solid var(--primary)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 800,
+            fontSize: '0.9rem',
+          }}
+        >
+          {(userProfile.mainWorkerName || 'J')[0].toUpperCase()}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {userProfile.mainWorkerName || 'Juan (Principal)'}
+          </div>
+          <div style={{ color: 'var(--status-paid)', fontSize: '0.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--status-paid)', boxShadow: '0 0 6px var(--status-paid)' }} />
+            En línea
+          </div>
+        </div>
+      </div>
     </aside>
   );
 };

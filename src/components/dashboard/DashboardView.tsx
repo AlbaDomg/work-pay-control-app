@@ -95,12 +95,29 @@ export const DashboardView: React.FC = () => {
       {/* Header y Filtro de Rango */}
       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1>Panel de Control</h1>
-          <p style={{ fontSize: '0.9rem' }}>Visión general de tus ingresos, jornadas y cobros</p>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>Panel de Control</span>
+          </h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            Resumen en tiempo real de ingresos, horas trabajadas y cobros pendientes
+          </p>
         </div>
 
         {/* Filtros de Fecha */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'var(--bg-card)',
+            backdropFilter: 'blur(12px)',
+            padding: '4px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-sm)',
+            flexWrap: 'wrap',
+          }}
+        >
           {[
             { id: 'today', label: 'Hoy' },
             { id: 'week', label: 'Esta semana' },
@@ -112,14 +129,16 @@ export const DashboardView: React.FC = () => {
               key={f.id}
               onClick={() => setDateFilter(f.id as DateFilterRange)}
               style={{
-                padding: '6px 12px',
+                padding: '7px 14px',
                 borderRadius: 'var(--radius-md)',
-                fontSize: '0.8rem',
-                fontWeight: dateFilter === f.id ? 700 : 500,
-                border: '1px solid var(--border-color)',
-                background: dateFilter === f.id ? 'var(--gradient-primary)' : 'var(--bg-card)',
+                fontSize: '0.82rem',
+                fontWeight: dateFilter === f.id ? 800 : 600,
+                border: 'none',
+                background: dateFilter === f.id ? 'var(--gradient-primary)' : 'transparent',
                 color: dateFilter === f.id ? '#ffffff' : 'var(--text-secondary)',
                 cursor: 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: dateFilter === f.id ? '0 4px 14px rgba(99, 102, 241, 0.35)' : 'none',
               }}
             >
               {f.label}
@@ -129,25 +148,27 @@ export const DashboardView: React.FC = () => {
       </div>
 
       {/* BANNER DE ALERTAS CRÍTICAS */}
-      {(overduePeriods.length > 0 || pendingSendToday.length > 0 || totalGlobalPending > 0) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {(overduePeriods.length > 0 || pendingSendToday.length > 0) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {overduePeriods.length > 0 && (
             <div
               style={{
                 background: 'var(--status-overdue-bg)',
-                border: '1px solid var(--status-overdue)',
-                borderRadius: 'var(--radius-md)',
-                padding: '12px 16px',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(244, 63, 94, 0.3)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '14px 20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 color: 'var(--status-overdue)',
+                boxShadow: '0 4px 16px rgba(244, 63, 94, 0.15)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <AlertTriangle size={20} />
-                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                  🔴 Tienes {overduePeriods.length} cobro(s) vencido(s) sin recibir pago.
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <AlertTriangle size={22} />
+                <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>
+                  Tienes {overduePeriods.length} cobro(s) vencido(s) que requieren reclamación inmediata.
                 </span>
               </div>
               <button
@@ -163,24 +184,26 @@ export const DashboardView: React.FC = () => {
             <div
               style={{
                 background: 'var(--status-pending-bg)',
-                border: '1px solid var(--status-pending)',
-                borderRadius: 'var(--radius-md)',
-                padding: '12px 16px',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '14px 20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 color: 'var(--status-pending)',
+                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.15)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <CalendarDays size={20} />
-                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                  📅 Hoy tienes {pendingSendToday.length} solicitud(es) de cobro pendientes de enviar.
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <CalendarDays size={22} />
+                <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>
+                  Hoy finalizan {pendingSendToday.length} periodo(s) listos para enviar solicitud de cobro.
                 </span>
               </div>
               <button
                 className="btn btn-sm"
-                style={{ background: 'var(--status-pending)', color: '#fff' }}
+                style={{ background: 'var(--status-pending)', color: '#fff', fontWeight: 700 }}
                 onClick={() => setActiveTab('billing')}
               >
                 Generar Mensajes
@@ -193,118 +216,122 @@ export const DashboardView: React.FC = () => {
       {/* TARJETAS KPI DE MÉTRICAS */}
       <div className="grid-4">
         {/* DINERO GENERADO */}
-        <div className="card">
-          <div className="flex-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+        <div className="card card-hover">
+          <div className="flex-between" style={{ marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               DINERO GENERADO
             </span>
             <div
               style={{
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 borderRadius: 'var(--radius-md)',
                 background: 'var(--primary-light)',
                 color: 'var(--primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(99, 102, 241, 0.25)',
               }}
             >
-              <TrendingUp size={18} />
+              <TrendingUp size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
+          <div style={{ fontSize: '1.85rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
             {formatCurrency(totalGenerated)}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            En el periodo seleccionado
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>
+            Trabajos facturados en periodo
           </div>
         </div>
 
         {/* DINERO COBRADO */}
-        <div className="card">
-          <div className="flex-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+        <div className="card card-hover">
+          <div className="flex-between" style={{ marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               DINERO COBRADO
             </span>
             <div
               style={{
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 borderRadius: 'var(--radius-md)',
                 background: 'var(--status-paid-bg)',
                 color: 'var(--status-paid)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(16, 185, 129, 0.25)',
               }}
             >
-              <CheckCircle2 size={18} />
+              <CheckCircle2 size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--status-paid)' }}>
+          <div style={{ fontSize: '1.85rem', fontWeight: 900, color: 'var(--status-paid)', letterSpacing: '-0.02em' }}>
             {formatCurrency(totalCollected)}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Ingresado en cuenta
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>
+            Ingresado y confirmado
           </div>
         </div>
 
         {/* DINERO PENDIENTE */}
-        <div className="card">
-          <div className="flex-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+        <div className="card card-hover">
+          <div className="flex-between" style={{ marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               DINERO PENDIENTE
             </span>
             <div
               style={{
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 borderRadius: 'var(--radius-md)',
                 background: 'var(--status-pending-bg)',
                 color: 'var(--status-pending)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)',
               }}
             >
-              <CreditCard size={18} />
+              <CreditCard size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--status-pending)' }}>
+          <div style={{ fontSize: '1.85rem', fontWeight: 900, color: 'var(--status-pending)', letterSpacing: '-0.02em' }}>
             {formatCurrency(totalGlobalPending)}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>
             Total por cobrar acumulado
           </div>
         </div>
 
         {/* HORAS TRABAJADAS */}
-        <div className="card">
-          <div className="flex-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+        <div className="card card-hover">
+          <div className="flex-between" style={{ marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
               HORAS TRABAJADAS
             </span>
             <div
               style={{
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 borderRadius: 'var(--radius-md)',
                 background: 'var(--status-sent-bg)',
                 color: 'var(--status-sent)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(14, 165, 233, 0.25)',
               }}
             >
-              <Clock size={18} />
+              <Clock size={20} />
             </div>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>
+          <div style={{ fontSize: '1.85rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
             {formatHours(totalHours)}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            {activeClientsCount} clientes activos
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px', fontWeight: 500 }}>
+            {activeClientsCount} clientes activos en cartera
           </div>
         </div>
       </div>

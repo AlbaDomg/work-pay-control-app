@@ -70,7 +70,8 @@ export interface WorkEntry {
   amount: number; // Importe principal (hours * hourlyRate)
   mainWorkerName?: string; // Nombre real del principal
   collaborators?: WorkEntryCollaborator[]; // Lista de ayudantes
-  totalAmount?: number; // Importe total cobrado al cliente (Principal + Ayudantes)
+  materialCost?: number; // Gasto en compra de materiales
+  totalAmount?: number; // Importe total cobrado al cliente (Principal + Ayudantes + Materiales)
   description?: string;
   createdAt: string;
 }

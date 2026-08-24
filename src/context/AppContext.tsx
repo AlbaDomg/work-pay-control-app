@@ -362,7 +362,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     const collabsTotalAmount = collaborators.reduce((sum, c) => sum + c.amount, 0);
-    const totalAmount = Math.round((mainWorkerAmount + collabsTotalAmount) * 100) / 100;
+    const materialCost = Math.round((Number(entryData.materialCost) || 0) * 100) / 100;
+    const totalAmount = Math.round((mainWorkerAmount + collabsTotalAmount + materialCost) * 100) / 100;
 
     let updatedEntries: WorkEntry[];
     if (entryData.id) {
@@ -375,6 +376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               amount: mainWorkerAmount,
               mainWorkerName,
               collaborators,
+              materialCost,
               totalAmount,
             } as WorkEntry)
           : w
@@ -393,6 +395,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         amount: mainWorkerAmount,
         mainWorkerName,
         collaborators,
+        materialCost,
         totalAmount,
         description: entryData.description || '',
         createdAt: new Date().toISOString(),
