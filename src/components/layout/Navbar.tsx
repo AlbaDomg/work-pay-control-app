@@ -16,6 +16,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <header
+      className="navbar-desktop"
       style={{
         background: 'var(--bg-nav)',
         backdropFilter: 'blur(18px)',
@@ -25,12 +26,19 @@ export const Navbar: React.FC = () => {
         position: 'sticky',
         top: 0,
         zIndex: 40,
-        display: 'flex',
+        display: 'none',
         alignItems: 'center',
         justifyContent: 'space-between',
         boxShadow: 'var(--shadow-sm)',
       }}
     >
+      <style>{`
+        @media (min-width: 1024px) {
+          .navbar-desktop {
+            display: flex !important;
+          }
+        }
+      `}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div
           style={{
