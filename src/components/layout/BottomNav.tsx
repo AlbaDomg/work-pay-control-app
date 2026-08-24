@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { LayoutDashboard, Receipt, Clock, Users, Plus, UserPlus, FileText, X } from 'lucide-react';
+import { LayoutDashboard, Receipt, Clock, Users, Plus, UserPlus, FileText, Settings, X } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
   const { activeTab, setActiveTab, openWorkModal, openClientModal, billingPeriods } = useApp();
@@ -11,9 +11,10 @@ export const BottomNav: React.FC = () => {
   const items = [
     { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
     { id: 'billing', label: 'Cobros', icon: Receipt, badge: alertCount },
-    { id: 'add', label: '', icon: Plus, isCta: true },
     { id: 'work', label: 'Trabajo', icon: Clock },
+    { id: 'add', label: '', icon: Plus, isCta: true },
     { id: 'clients', label: 'Clientes', icon: Users },
+    { id: 'settings', label: 'Ajustes', icon: Settings },
   ];
 
   const handleOpenWork = () => {
@@ -28,6 +29,11 @@ export const BottomNav: React.FC = () => {
     openClientModal();
   };
 
+  const handleOpenSettings = () => {
+    setIsMenuOpen(false);
+    setActiveTab('settings');
+  };
+
   return (
     <>
       {/* Menú Flotante Emergente al pulsar el botón + */}
@@ -36,8 +42,8 @@ export const BottomNav: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.4)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(6px)',
             zIndex: 90,
           }}
           onClick={() => setIsMenuOpen(false)}
@@ -49,15 +55,16 @@ export const BottomNav: React.FC = () => {
               left: '50%',
               transform: 'translateX(-50%)',
               background: 'var(--bg-card)',
+              backdropFilter: 'blur(20px)',
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-lg)',
-              padding: '10px',
+              padding: '12px',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
-              boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
-              minWidth: '220px',
-              animation: 'slideUp 0.2s ease-out forwards',
+              boxShadow: 'var(--shadow-xl)',
+              minWidth: '240px',
+              animation: 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -101,6 +108,27 @@ export const BottomNav: React.FC = () => {
             >
               <UserPlus size={18} color="var(--primary)" />
               <span>Nuevo Cliente</span>
+            </button>
+
+            <button
+              onClick={handleOpenSettings}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: 'var(--radius-md)',
+                border: 'none',
+                background: 'var(--bg-input)',
+                color: 'var(--text-main)',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <Settings size={18} color="var(--primary)" />
+              <span>Configuración / Ayudantes</span>
             </button>
           </div>
         </div>
