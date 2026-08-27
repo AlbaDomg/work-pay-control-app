@@ -396,6 +396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         mainWorkerName,
         collaborators,
         materialCost,
+        materials: entryData.materials || [],
         totalAmount,
         description: entryData.description || '',
         createdAt: new Date().toISOString(),

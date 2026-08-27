@@ -42,9 +42,12 @@ function formatEntryBreakdown(entry: WorkEntry, currency: string): string {
 
     if (hasMaterials) {
       if (entry.materials && entry.materials.length > 0) {
+        lines.push(`• Materiales comprados:`);
         entry.materials.forEach(m => {
-          lines.push(`• Material (${m.name}): ${formatCurrency(m.cost, currency)}`);
+          lines.push(`  - ${m.name}: ${formatCurrency(m.cost, currency)}`);
         });
+        const matTotal = entry.materialCost ?? entry.materials.reduce((s, m) => s + (Number(m.cost) || 0), 0);
+        lines.push(`  (Total materiales: ${formatCurrency(matTotal, currency)})`);
       } else {
         lines.push(`• Materiales: ${formatCurrency(entry.materialCost!, currency)}`);
       }
