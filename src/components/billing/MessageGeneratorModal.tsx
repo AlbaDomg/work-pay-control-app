@@ -182,36 +182,35 @@ export const MessageGeneratorModal: React.FC = () => {
             </div>
             <textarea
               className="input"
-              rows={10}
-              style={{ fontFamily: 'monospace', fontSize: '0.875rem', lineHeight: 1.5 }}
+              rows={7}
+              style={{ fontFamily: 'monospace', fontSize: '0.85rem', lineHeight: 1.45, minHeight: '120px' }}
               value={messageText}
               onChange={e => setMessageText(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+        <div className="modal-footer" style={{ gap: '8px', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={handleMarkAsSent}
+            style={{ flex: '1 1 140px', justifyContent: 'center' }}
             title="Marca el estado como Solicitud enviada"
           >
             <Send size={16} />
-            <span>Marcar como Enviado</span>
+            <span>Marcar Enviado</span>
           </button>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              type="button"
-              className={`btn ${copied ? 'btn-success' : 'btn-primary'}`}
-              onClick={handleCopy}
-              style={{ paddingLeft: '20px', paddingRight: '20px' }}
-            >
-              {copied ? <Check size={18} /> : <Copy size={18} />}
-              <span>{copied ? '¡COPIADO!' : 'COPIAR MENSAJE'}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className={`btn ${copied ? 'btn-success' : 'btn-primary'}`}
+            onClick={handleCopy}
+            style={{ flex: '1 1 140px', justifyContent: 'center' }}
+          >
+            {copied ? <Check size={18} /> : <Copy size={18} />}
+            <span>{copied ? '¡COPIADO!' : 'COPIAR MENSAJE'}</span>
+          </button>
         </div>
       </div>
     </div>
