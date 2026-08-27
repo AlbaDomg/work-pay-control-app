@@ -58,6 +58,12 @@ export interface UserProfile {
   isConfigured?: boolean;
 }
 
+export interface WorkEntryMaterial {
+  id: string;
+  name: string;
+  cost: number;
+}
+
 export interface WorkEntry {
   id: string;
   clientId: string;
@@ -71,6 +77,7 @@ export interface WorkEntry {
   mainWorkerName?: string; // Nombre real del principal
   collaborators?: WorkEntryCollaborator[]; // Lista de ayudantes
   materialCost?: number; // Gasto en compra de materiales
+  materials?: WorkEntryMaterial[]; // Desglose de materiales comprados
   totalAmount?: number; // Importe total cobrado al cliente (Principal + Ayudantes + Materiales)
   description?: string;
   createdAt: string;

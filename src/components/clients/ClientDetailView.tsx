@@ -241,7 +241,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = ({ clientId, on
                     </div>
                     {entry.materialCost && entry.materialCost > 0 ? (
                       <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '2px' }}>
-                        + Materiales: {formatCurrency(entry.materialCost, client.currency)}
+                        + Materiales ({formatCurrency(entry.materialCost, client.currency)}):{' '}
+                        {entry.materials && entry.materials.length > 0
+                          ? entry.materials.map(m => `${m.name} (${formatCurrency(m.cost, client.currency)})`).join(', ')
+                          : 'General'}
                       </div>
                     ) : null}
                   </div>

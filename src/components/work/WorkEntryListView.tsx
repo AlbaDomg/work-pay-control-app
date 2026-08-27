@@ -160,9 +160,14 @@ export const WorkEntryListView: React.FC = () => {
                       </div>
                     )}
                     {entry.materialCost && entry.materialCost > 0 ? (
-                      <div style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                         <Package size={13} color="var(--primary)" />
-                        <span>Materiales: {formatCurrency(entry.materialCost, currency)}</span>
+                        <span>
+                          Materiales ({formatCurrency(entry.materialCost, currency)}):{' '}
+                          {entry.materials && entry.materials.length > 0
+                            ? entry.materials.map(m => `${m.name} (${formatCurrency(m.cost, currency)})`).join(', ')
+                            : 'General'}
+                        </span>
                       </div>
                     ) : null}
                   </div>

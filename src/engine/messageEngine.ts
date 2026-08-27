@@ -41,7 +41,13 @@ function formatEntryBreakdown(entry: WorkEntry, currency: string): string {
     }
 
     if (hasMaterials) {
-      lines.push(`• Materiales: ${formatCurrency(entry.materialCost!, currency)}`);
+      if (entry.materials && entry.materials.length > 0) {
+        entry.materials.forEach(m => {
+          lines.push(`• Material (${m.name}): ${formatCurrency(m.cost, currency)}`);
+        });
+      } else {
+        lines.push(`• Materiales: ${formatCurrency(entry.materialCost!, currency)}`);
+      }
     }
 
     return `${dateFormatted}${desc}:\n${lines.join('\n')}\n  Subtotal día: ${formatCurrency(entryTotal, currency)}`;

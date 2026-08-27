@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { calculateHoursFromTimeRange, getTodayFormatted } from '../../utils/dateUtils';
 import { formatCurrency } from '../../engine/moneyEngine';
 import { X, Clock, Calculator, UserCheck, Plus, Trash2, Package } from 'lucide-react';
-import { WorkEntryCollaborator } from '../../types';
+import { WorkEntryCollaborator, WorkEntryMaterial } from '../../types';
 
 export const WorkEntryModal: React.FC = () => {
   const {
@@ -27,6 +27,7 @@ export const WorkEntryModal: React.FC = () => {
   const [manualHours, setManualHours] = useState<string | number>(5);
   const [mainWorkerName, setMainWorkerName] = useState<string>('');
   const [entryCollaborators, setEntryCollaborators] = useState<WorkEntryCollaborator[]>([]);
+  const [entryMaterials, setEntryMaterials] = useState<WorkEntryMaterial[]>([]);
   const [materialCost, setMaterialCost] = useState<string | number>(0);
   const [description, setDescription] = useState<string>('');
 
@@ -37,6 +38,7 @@ export const WorkEntryModal: React.FC = () => {
       setDescription(editingWorkEntry.description || '');
       setMainWorkerName(editingWorkEntry.mainWorkerName || userProfile.mainWorkerName || 'Juan');
       setEntryCollaborators(editingWorkEntry.collaborators || []);
+      setEntryMaterials(editingWorkEntry.materials || []);
       setMaterialCost(editingWorkEntry.materialCost ?? 0);
 
       if (editingWorkEntry.startTime && editingWorkEntry.endTime) {
@@ -58,6 +60,7 @@ export const WorkEntryModal: React.FC = () => {
       setManualHours(5);
       setMainWorkerName(userProfile.mainWorkerName || 'Juan');
       setEntryCollaborators([]);
+      setEntryMaterials([]);
       setMaterialCost(0);
       setDescription('');
     }
@@ -83,7 +86,15 @@ export const WorkEntryModal: React.FC = () => {
     return sum + itemAmount;
   }, 0);
 
-  const parsedMaterialCost = Math.max(0, parseFloat(String(materialCost)) || 0);
+  // Cálculo de materiales
+  const materialsTotalCost = entryMaterials.reduce((sum, m) => {
+    return sum + Math.max(0, parseFloat(String(m.cost)) || 0);
+  }, 0);
+
+  const parsedMaterialCost = entryMaterials.length > 0
+    ? Math.round(materialsTotalCost * 100) / 100
+    : Math.max(0, parseFloat(String(materialCost)) || 0);
+
   const grandTotalAmount = Math.round((mainWorkerAmount + collabsTotalAmount + parsedMaterialCost) * 100) / 100;
 
   const handleAddCollaborator = () => {
@@ -114,9 +125,36 @@ export const WorkEntryModal: React.FC = () => {
     setEntryCollaborators(prev => prev.filter(c => c.id !== id));
   };
 
+  const handleAddMaterial = () => {
+    const newMaterial: WorkEntryMaterial = {
+      id: `mat_item_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      name: '',
+      cost: '' as any,
+    };
+    setEntryMaterials(prev => [...prev, newMaterial]);
+  };
+
+  const handleUpdateMaterial = (id: string, field: keyof WorkEntryMaterial, value: any) => {
+    setEntryMaterials(prev =>
+      prev.map(m => (m.id === id ? { ...m, [field]: value } : m))
+    );
+  };
+
+  const handleRemoveMaterial = (id: string) => {
+    setEntryMaterials(prev => prev.filter(m => m.id !== id));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientId) return;
+
+    const cleanedMaterials = entryMaterials
+      .filter(m => m.name.trim() !== '' || (parseFloat(String(m.cost)) || 0) > 0)
+      .map(m => ({
+        id: m.id,
+        name: m.name.trim() || 'Material',
+        cost: Math.max(0, parseFloat(String(m.cost)) || 0),
+      }));
 
     saveWorkEntry({
       id: editingWorkEntry ? editingWorkEntry.id : undefined,
@@ -131,6 +169,7 @@ export const WorkEntryModal: React.FC = () => {
       mainWorkerName: mainWorkerName.trim() || userProfile.mainWorkerName || 'Juan',
       collaborators: entryCollaborators,
       materialCost: parsedMaterialCost,
+      materials: cleanedMaterials,
       totalAmount: grandTotalAmount,
       description,
     });
@@ -441,24 +480,92 @@ export const WorkEntryModal: React.FC = () => {
             </div>
 
             {/* SECCIÓN DE GASTOS EN MATERIALES */}
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Package size={16} color="var(--primary)" />
-                <span>Gasto en Materiales ({currentCurrency}) (opcional)</span>
-              </label>
-              <input
-                type="number"
-                step="any"
-                min="0"
-                className="input"
-                placeholder="0.00"
-                value={materialCost}
-                onChange={e => setMaterialCost(e.target.value)}
-                onFocus={e => e.target.select()}
-              />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
-                Este importe se sumará al total facturado al cliente en este trabajo.
-              </span>
+            <div
+              style={{
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-md)',
+                padding: '14px',
+                background: 'var(--bg-card)',
+              }}
+            >
+              <div className="flex-between" style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Package size={18} color="var(--primary)" />
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                    Materiales Comprados ({entryMaterials.length})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={handleAddMaterial}
+                >
+                  <Plus size={14} />
+                  <span>+ Añadir Material</span>
+                </button>
+              </div>
+
+              {entryMaterials.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                    No has desglosado materiales específicos. Puedes añadirlos con "+ Añadir Material" o especificar un total general:
+                  </p>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    className="input"
+                    placeholder="Total general materiales (€)"
+                    value={materialCost}
+                    onChange={e => setMaterialCost(e.target.value)}
+                    onFocus={e => e.target.select()}
+                  />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {entryMaterials.map(m => (
+                    <div key={m.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        className="input"
+                        style={{ padding: '8px 10px', fontSize: '0.85rem', flex: 2 }}
+                        placeholder="Descripción (ej: Cable HDMI 15m, Tubería...)"
+                        value={m.name}
+                        onChange={e => handleUpdateMaterial(m.id, 'name', e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        className="input"
+                        style={{ padding: '8px 10px', fontSize: '0.85rem', flex: 1, maxWidth: '130px' }}
+                        placeholder="Coste (€)"
+                        value={m.cost ?? ''}
+                        onChange={e => handleUpdateMaterial(m.id, 'cost', e.target.value)}
+                        onFocus={e => e.target.select()}
+                      />
+                      <button
+                        type="button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--status-overdue)',
+                          cursor: 'pointer',
+                          padding: '6px',
+                          flexShrink: 0,
+                        }}
+                        onClick={() => handleRemoveMaterial(m.id)}
+                        title="Eliminar material"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: '0.8rem', textAlign: 'right', fontWeight: 700, color: 'var(--primary)', marginTop: '2px' }}>
+                    Total Materiales: {formatCurrency(parsedMaterialCost, currentCurrency)}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Descripción opcional */}
