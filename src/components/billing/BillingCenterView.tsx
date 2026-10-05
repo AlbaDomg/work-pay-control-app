@@ -1,34 +1,35 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { formatCurrency, formatHours, subtractMoney } from '../../engine/moneyEngine';
+import { formatCurrency, formatHours, subtractMoney, addMoney } from '../../engine/moneyEngine';
 import { formatDateSpanish, getTodayFormatted } from '../../utils/dateUtils';
 import { StatusBadge } from '../common/StatusBadge';
-import { BillingPeriod, BillingStatus } from '../../types';
-import { Receipt, Send, CreditCard, CheckCircle2, Clock, AlertTriangle, Search } from 'lucide-react';
+import { BillingPeriod, Client } from '../../types';
+import { Send, CreditCard, CheckCircle2, Clock, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 export const BillingCenterView: React.FC = () => {
   const {
     billingPeriods,
     clients,
-    workEntries,
     openMessageModal,
     openPaymentModal,
     updatePeriodStatus,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'pending' | 'overdue' | 'paid'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'month' | 'pending' | 'overdue' | 'paid'>('today');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [expandedClientIds, setExpandedClientIds] = useState<string[]>([]);
 
   const today = getTodayFormatted();
+  const currentMonthPrefix = today.substring(0, 7);
 
-  // Filtrado de periodos según la pestaña activa
+  // Filtrado de periodos según la pestaña activa y búsqueda
   const getFilteredPeriods = (): BillingPeriod[] => {
     let filtered = billingPeriods;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(p => {
-        const client = clients.find(c => c.id === p.clientId);
+        const client = clients.find(c => String(c.id).trim() === String(p.clientId).trim());
         return (
           client?.name.toLowerCase().includes(q) ||
           client?.company?.toLowerCase().includes(q) ||
@@ -40,19 +41,16 @@ export const BillingCenterView: React.FC = () => {
 
     switch (activeTab) {
       case 'today':
-        // Cobros por enviar hoy o cuya fecha fin es hoy o previa
         return filtered.filter(p => p.status === 'pending_send' && p.endDate <= today);
       case 'week':
-        // Periodos pendientes de enviar
         return filtered.filter(p => p.status === 'pending_send' || p.status === 'open');
+      case 'month':
+        return filtered.filter(p => p.startDate.startsWith(currentMonthPrefix) || p.endDate.startsWith(currentMonthPrefix));
       case 'pending':
-        // Todos los no pagados (por recibir dinero)
         return filtered.filter(p => p.status !== 'paid');
       case 'overdue':
-        // Vencidos
         return filtered.filter(p => p.status === 'overdue');
       case 'paid':
-        // Completamente pagados
         return filtered.filter(p => p.status === 'paid');
       default:
         return filtered;
@@ -65,9 +63,48 @@ export const BillingCenterView: React.FC = () => {
   const counts = {
     today: billingPeriods.filter(p => p.status === 'pending_send' && p.endDate <= today).length,
     week: billingPeriods.filter(p => p.status === 'pending_send' || p.status === 'open').length,
+    month: billingPeriods.filter(p => p.startDate.startsWith(currentMonthPrefix) || p.endDate.startsWith(currentMonthPrefix)).length,
     pending: billingPeriods.filter(p => p.status !== 'paid').length,
     overdue: billingPeriods.filter(p => p.status === 'overdue').length,
     paid: billingPeriods.filter(p => p.status === 'paid').length,
+  };
+
+  // Agrupar los periodos mostrados por Cliente
+  const clientMap = new Map<string, Client>(clients.map(c => [String(c.id).trim(), c]));
+  
+  // Obtener lista de clientes que tienen periodos mostrados
+  const periodsByClientId = new Map<string, BillingPeriod[]>();
+  displayedPeriods.forEach(period => {
+    const key = String(period.clientId).trim();
+    const list = periodsByClientId.get(key) || [];
+    list.push(period);
+    periodsByClientId.set(key, list);
+  });
+
+  const clientGroupList = Array.from(periodsByClientId.entries()).map(([clientId, periods]) => {
+    const client = clientMap.get(clientId);
+    const totalAmount = periods.reduce((sum, p) => addMoney(sum, p.totalAmount), 0);
+    const totalPaid = periods.reduce((sum, p) => addMoney(sum, p.paidAmount), 0);
+    const totalPending = subtractMoney(totalAmount, totalPaid);
+    const hasAlerts = periods.some(p => p.status === 'overdue' || p.status === 'pending_send');
+
+    return {
+      client,
+      clientId,
+      periods,
+      totalAmount,
+      totalPaid,
+      totalPending,
+      hasAlerts,
+    };
+  });
+
+  const toggleExpandClient = (clientId: string) => {
+    if (expandedClientIds.includes(clientId)) {
+      setExpandedClientIds(expandedClientIds.filter(id => id !== clientId));
+    } else {
+      setExpandedClientIds([...expandedClientIds, clientId]);
+    }
   };
 
   return (
@@ -77,7 +114,7 @@ export const BillingCenterView: React.FC = () => {
         <div>
           <h1>Centro de Cobros</h1>
           <p style={{ fontSize: '0.9rem' }}>
-            Gestiona las solicitudes de pago, genera mensajes para WhatsApp/Email y registra cobros.
+            Gestiona cobros y mensajes organizados limpiamente por cada cliente.
           </p>
         </div>
 
@@ -97,7 +134,7 @@ export const BillingCenterView: React.FC = () => {
             type="text"
             className="input"
             style={{ paddingLeft: '36px' }}
-            placeholder="Buscar por cliente o fecha..."
+            placeholder="Buscar cliente o fecha..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
@@ -117,6 +154,7 @@ export const BillingCenterView: React.FC = () => {
         {[
           { id: 'today', label: '🔴 HOY (Enviar hoy)', badge: counts.today, color: 'var(--status-overdue)' },
           { id: 'week', label: '🟡 ESTA SEMANA', badge: counts.week, color: 'var(--status-pending)' },
+          { id: 'month', label: '📅 ESTE MES', badge: counts.month, color: 'var(--primary)' },
           { id: 'pending', label: 'PENDIENTES', badge: counts.pending, color: 'var(--primary)' },
           { id: 'overdue', label: 'VENCIDOS', badge: counts.overdue, color: 'var(--status-overdue)' },
           { id: 'paid', label: 'PAGADOS', badge: counts.paid, color: 'var(--status-paid)' },
@@ -159,8 +197,8 @@ export const BillingCenterView: React.FC = () => {
         ))}
       </div>
 
-      {/* LISTA DE PERIODOS DE COBRO */}
-      {displayedPeriods.length === 0 ? (
+      {/* VISTA DE TARJETAS AGRUPADAS POR CLIENTE */}
+      {clientGroupList.length === 0 ? (
         <div className="card" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
           <CheckCircle2 size={48} style={{ marginBottom: '12px', color: 'var(--status-paid)' }} />
           <h3>No hay cobros en esta categoría</h3>
@@ -168,134 +206,226 @@ export const BillingCenterView: React.FC = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {displayedPeriods.map(period => {
-            const client = clients.find(c => c.id === period.clientId);
-            const currency = client ? client.currency : 'EUR';
-            const pendingAmount = subtractMoney(period.totalAmount, period.paidAmount);
+          {clientGroupList.map(group => {
+            const clientName = group.client?.name || 'Cliente sin nombre';
+            const company = group.client?.company;
+            const currency = group.client?.currency || 'EUR';
+            const isExpanded = expandedClientIds.includes(group.clientId) || clientGroupList.length === 1;
 
             return (
               <div
-                key={period.id}
-                className="card card-hover"
+                key={group.clientId}
+                className="card"
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
-                  borderLeft: `4px solid ${
-                    period.status === 'paid'
-                      ? 'var(--status-paid)'
-                      : period.status === 'overdue'
-                      ? 'var(--status-overdue)'
-                      : period.status === 'partial_payment'
-                      ? 'var(--status-partial)'
-                      : 'var(--primary)'
-                  }`,
+                  padding: 0,
+                  overflow: 'hidden',
+                  border: isExpanded ? '1px solid var(--primary-light)' : '1px solid var(--border-color)',
+                  boxShadow: isExpanded ? 'var(--shadow-md)' : 'var(--shadow-sm)',
                 }}
               >
-                <div className="flex-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
-                  {/* Info Cliente & Periodo */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{client?.name || 'Cliente'}</h3>
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          padding: '2px 8px',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-input)',
-                          color: 'var(--text-secondary)',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {period.frequency === 'custom'
-                          ? `Cada ${client?.customBillingDays || 15} días`
-                          : period.frequency}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                      Periodo:{' '}
-                      <strong style={{ color: 'var(--text-main)' }}>
-                        {formatDateSpanish(period.startDate, { short: true, includeYear: true })}
-                      </strong>{' '}
-                      al{' '}
-                      <strong style={{ color: 'var(--text-main)' }}>
-                        {formatDateSpanish(period.endDate, { short: true, includeYear: true })}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {/* Estado y Montos */}
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                      {formatCurrency(period.totalAmount, currency)}
-                    </div>
-                    {period.paidAmount > 0 && period.paidAmount < period.totalAmount && (
-                      <div style={{ fontSize: '0.8rem', color: 'var(--status-partial)', fontWeight: 600 }}>
-                        Cobrado: {formatCurrency(period.paidAmount, currency)} | Pendiente:{' '}
-                        {formatCurrency(pendingAmount, currency)}
-                      </div>
-                    )}
-                    <div style={{ marginTop: '4px' }}>
-                      <StatusBadge status={period.status} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Detalles de horas */}
+                {/* Cabecera de la Tarjeta del Cliente */}
                 <div
+                  onClick={() => toggleExpandClient(group.clientId)}
                   style={{
-                    background: 'var(--bg-input)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '10px 14px',
+                    padding: '16px 20px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    background: isExpanded ? 'var(--bg-card-hover)' : 'var(--bg-card)',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    userSelect: 'none',
+                    transition: 'background 0.2s ease',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
-                    <Clock size={16} />
-                    <span>Total: {formatHours(period.totalHours)} trabajadas</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '220px' }}>
+                    {/* Avatar iniciales cliente */}
+                    <div
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: 'var(--radius-md)',
+                        background: group.hasAlerts ? 'var(--status-pending-bg)' : 'var(--primary-light)',
+                        border: `1px solid ${group.hasAlerts ? 'rgba(217, 119, 6, 0.3)' : 'rgba(79, 70, 229, 0.3)'}`,
+                        color: group.hasAlerts ? 'var(--status-pending)' : 'var(--primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '1.1rem',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {clientName.substring(0, 2).toUpperCase()}
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>{clientName}</h3>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            padding: '2px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-input)',
+                            color: 'var(--text-secondary)',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {group.client?.billingFrequency === 'custom'
+                            ? `Cada ${group.client?.customBillingDays || 15} días`
+                            : group.client?.billingFrequency || 'Mensual'}
+                        </span>
+                      </div>
+
+                      {company && (
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
+                          {company}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                    Fecha límite cobro: {formatDateSpanish(period.dueDate, { short: true })}
+                  {/* Saldo acumulado del cliente & Boton desplegar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--status-paid)' }}>
+                        {formatCurrency(group.totalPending > 0 ? group.totalPending : group.totalAmount, currency)}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        {group.periods.length} {group.periods.length === 1 ? 'periodo de cobro' : 'periodos de cobro'}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: 'var(--radius-full)',
+                        background: 'var(--bg-input)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </div>
                   </div>
                 </div>
 
-                {/* Botones de Acción */}
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                  {period.status !== 'paid' && (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => openMessageModal(period)}
-                    >
-                      <Send size={16} />
-                      <span>Generar Mensaje</span>
-                    </button>
-                  )}
+                {/* Contenido desplegado: Periodos de cobro específicos de ESTE cliente */}
+                {isExpanded && (
+                  <div
+                    style={{
+                      padding: '16px 20px',
+                      background: 'var(--bg-input)',
+                      borderTop: '1px solid var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                    }}
+                  >
+                    {group.periods.map(period => {
+                      const pendingAmount = subtractMoney(period.totalAmount, period.paidAmount);
 
-                  {period.status !== 'paid' && (
-                    <button
-                      className="btn btn-success"
-                      onClick={() => openPaymentModal(period)}
-                    >
-                      <CreditCard size={16} />
-                      <span>Registrar Pago</span>
-                    </button>
-                  )}
+                      return (
+                        <div
+                          key={period.id}
+                          style={{
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-md)',
+                            padding: '14px 16px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            boxShadow: 'var(--shadow-sm)',
+                          }}
+                        >
+                          <div className="flex-between" style={{ flexWrap: 'wrap', gap: '10px' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                                  Del {formatDateSpanish(period.startDate, { short: true, includeYear: true })} al{' '}
+                                  {formatDateSpanish(period.endDate, { short: true, includeYear: true })}
+                                </span>
+                                <StatusBadge status={period.status} />
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                Vencimiento cobro: {formatDateSpanish(period.dueDate, { short: true, includeYear: true })}
+                              </div>
+                            </div>
 
-                  {period.status === 'open' || period.status === 'pending_send' ? (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => updatePeriodStatus(period.id, 'sent')}
-                    >
-                      Marcar enviado
-                    </button>
-                  ) : null}
-                </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-main)' }}>
+                                {formatCurrency(period.totalAmount, currency)}
+                              </div>
+                              {period.paidAmount > 0 && period.paidAmount < period.totalAmount && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--status-partial)', fontWeight: 600 }}>
+                                  Pagado: {formatCurrency(period.paidAmount, currency)} | Pendiente:{' '}
+                                  {formatCurrency(pendingAmount, currency)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Info de horas */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              fontSize: '0.8rem',
+                              color: 'var(--text-secondary)',
+                              borderTop: '1px solid var(--border-light)',
+                              paddingTop: '8px',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Clock size={14} style={{ color: 'var(--primary)' }} />
+                              <span>{formatHours(period.totalHours)} trabajadas en este periodo</span>
+                            </div>
+
+                            {/* Botones de acción del periodo de este cliente */}
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              {period.status !== 'paid' && (
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => openMessageModal(period)}
+                                >
+                                  <Send size={14} />
+                                  <span>Enviar Mensaje</span>
+                                </button>
+                              )}
+
+                              {period.status !== 'paid' && (
+                                <button
+                                  className="btn btn-success btn-sm"
+                                  onClick={() => openPaymentModal(period)}
+                                >
+                                  <CreditCard size={14} />
+                                  <span>Registrar Pago</span>
+                                </button>
+                              )}
+
+                              {(period.status === 'open' || period.status === 'pending_send') && (
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() => updatePeriodStatus(period.id, 'sent')}
+                                >
+                                  Marcar enviado
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
