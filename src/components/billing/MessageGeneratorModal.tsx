@@ -210,6 +210,7 @@ export const MessageGeneratorModal: React.FC = () => {
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-md)',
               overflow: 'hidden',
+              flexShrink: 0,
             }}
           >
             <div
@@ -222,12 +223,13 @@ export const MessageGeneratorModal: React.FC = () => {
                 cursor: 'pointer',
                 background: 'var(--bg-card)',
                 userSelect: 'none',
+                gap: '8px',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Filter size={15} style={{ color: 'var(--primary)' }} />
-                <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                  Trabajos a Incluir en el Mensaje
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                <Filter size={15} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  Trabajos a Incluir
                 </span>
                 <span
                   style={{
@@ -237,13 +239,15 @@ export const MessageGeneratorModal: React.FC = () => {
                     background: selectedEntryIds.length > 0 ? 'var(--primary-light)' : 'var(--bg-input)',
                     color: selectedEntryIds.length > 0 ? 'var(--primary)' : 'var(--text-muted)',
                     fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   {selectedEntryIds.length} / {clientWorkEntries.length}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--status-paid)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--status-paid)', whiteSpace: 'nowrap' }}>
                   {formatCurrency(totalSelectedAmount, client.currency || 'EUR')}
                 </span>
                 {isSelectionOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -251,7 +255,7 @@ export const MessageGeneratorModal: React.FC = () => {
             </div>
 
             {isSelectionOpen && (
-              <div style={{ padding: '12px', borderTop: '1px solid var(--border-color)' }}>
+              <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-color)' }}>
                 <div
                   style={{
                     display: 'flex',
@@ -262,9 +266,9 @@ export const MessageGeneratorModal: React.FC = () => {
                   }}
                 >
                   <span style={{ color: 'var(--text-muted)' }}>
-                    Marca o desmarca las jornadas que deseas enviar:
+                    Marca o desmarca las jornadas a enviar:
                   </span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={handleSelectAll}
@@ -298,13 +302,14 @@ export const MessageGeneratorModal: React.FC = () => {
                 </div>
 
                 {clientWorkEntries.length === 0 ? (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '12px 0' }}>
                     No hay registros de trabajo para este cliente.
                   </p>
                 ) : (
                   <div
                     style={{
-                      maxHeight: '170px',
+                      minHeight: '130px',
+                      maxHeight: '210px',
                       overflowY: 'auto',
                       display: 'flex',
                       flexDirection: 'column',
@@ -331,15 +336,16 @@ export const MessageGeneratorModal: React.FC = () => {
                             border: `1px solid ${isSelected ? 'var(--primary-light)' : 'var(--border-light)'}`,
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
+                            gap: '8px',
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                            <div style={{ color: isSelected ? 'var(--primary)' : 'var(--text-muted)', display: 'flex' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                            <div style={{ color: isSelected ? 'var(--primary)' : 'var(--text-muted)', display: 'flex', flexShrink: 0 }}>
                               {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
                             </div>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-main)' }}>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
                                   {formatDateSpanish(entry.date, { short: true, includeYear: true })}
                                 </span>
                                 {isInPeriod ? (
@@ -351,6 +357,7 @@ export const MessageGeneratorModal: React.FC = () => {
                                       background: 'var(--primary-light)',
                                       color: 'var(--primary)',
                                       fontWeight: 700,
+                                      whiteSpace: 'nowrap',
                                     }}
                                   >
                                     Periodo actual
@@ -364,6 +371,7 @@ export const MessageGeneratorModal: React.FC = () => {
                                       background: 'var(--status-pending-bg)',
                                       color: 'var(--status-pending)',
                                       fontWeight: 700,
+                                      whiteSpace: 'nowrap',
                                     }}
                                   >
                                     Anterior/Pendiente
@@ -375,11 +383,11 @@ export const MessageGeneratorModal: React.FC = () => {
                                   style={{
                                     fontSize: '0.74rem',
                                     color: 'var(--text-muted)',
-                                    margin: 0,
+                                    margin: '2px 0 0 0',
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
-                                    maxWidth: '260px',
+                                    maxWidth: '220px',
                                   }}
                                 >
                                   {entry.description}
@@ -388,7 +396,7 @@ export const MessageGeneratorModal: React.FC = () => {
                             </div>
                           </div>
 
-                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
                             <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)' }}>
                               {formatCurrency(entryTotal, client.currency || 'EUR')}
                             </div>
