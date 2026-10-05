@@ -25,20 +25,22 @@ export const MessageGeneratorModal: React.FC = () => {
   const [isSelectionOpen, setIsSelectionOpen] = useState<boolean>(true);
 
   const client = selectedPeriodForMessage
-    ? clients.find(c => c.id === selectedPeriodForMessage.clientId)
+    ? clients.find(c => String(c.id).trim() === String(selectedPeriodForMessage.clientId).trim())
     : null;
 
-  // Obtener estrictamente todos los trabajos de ESTE cliente
+  // Obtener estrictamente todos los trabajos de ESTE cliente (comparación 100% aislada)
   const clientWorkEntries = React.useMemo(() => {
-    if (!selectedPeriodForMessage || !client) return [];
+    if (!selectedPeriodForMessage || !client || !client.id) return [];
+    const targetClientId = String(client.id).trim();
     return workEntries
-      .filter(w => w.clientId === client.id)
+      .filter(w => w && w.clientId && String(w.clientId).trim() === targetClientId)
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [workEntries, selectedPeriodForMessage, client]);
 
   // Al abrir el modal o cambiar de periodo, inicializar la selección por defecto
   useEffect(() => {
     if (client && selectedPeriodForMessage) {
+      const targetClientId = String(client.id).trim();
       let defaultTone: MessageTone = 'informal';
       if (selectedPeriodForMessage.status === 'overdue') {
         defaultTone = 'second_reminder';
@@ -53,7 +55,7 @@ export const MessageGeneratorModal: React.FC = () => {
       // Identificar entradas pertenecientes a periodos ya pagados DE ESTE CLIENTE
       const paidEntryIds = new Set<string>();
       billingPeriods.forEach(p => {
-        if (p.clientId === client.id && p.status === 'paid') {
+        if (p && String(p.clientId).trim() === targetClientId && p.status === 'paid') {
           p.workEntryIds.forEach(id => paidEntryIds.add(id));
         }
       });
@@ -63,7 +65,7 @@ export const MessageGeneratorModal: React.FC = () => {
       // 2. O trabajos de este mismo cliente con fecha <= fin de periodo que NO pertenezcan a un periodo ya pagado
       const defaultSelected = clientWorkEntries
         .filter(entry => {
-          if (entry.clientId !== client.id) return false;
+          if (String(entry.clientId).trim() !== targetClientId) return false;
           if (periodWorkSet.has(entry.id)) return true;
           if (!paidEntryIds.has(entry.id) && entry.date <= selectedPeriodForMessage.endDate) return true;
           return false;
