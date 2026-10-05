@@ -58,15 +58,12 @@ export const Sidebar: React.FC = () => {
             width: '40px',
             height: '40px',
             borderRadius: 'var(--radius-md)',
-            background: 'var(--gradient-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
-            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
           }}
         >
-          <Wrench size={22} />
+          <img src="/logo.png" alt="ControlPagos Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <div>
           <h3 style={{ color: '#ffffff', fontSize: '1.15rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>

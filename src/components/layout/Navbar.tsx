@@ -45,17 +45,13 @@ export const Navbar: React.FC = () => {
             width: '38px',
             height: '38px',
             borderRadius: 'var(--radius-md)',
-            background: 'var(--gradient-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 800,
-            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)',
             flexShrink: 0,
           }}
         >
-          <Wrench size={20} />
+          <img src="/logo.png" alt="ControlPagos Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <div>
           <h2 style={{ fontSize: '1.05rem', margin: 0, lineHeight: 1.2, fontWeight: 800, letterSpacing: '-0.02em' }}>

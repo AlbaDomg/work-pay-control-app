@@ -1,6 +1,6 @@
 import { BillingPeriod, Client, MessageTone, WorkEntry } from '../types';
 import { formatDateSpanish, getMonthName } from '../utils/dateUtils';
-import { formatCurrency, formatHours, subtractMoney } from './moneyEngine';
+import { addMoney, formatCurrency, formatHours, subtractMoney } from './moneyEngine';
 
 /**
  * Motor de Generación Automática de Mensajes de Cobro
@@ -63,11 +63,21 @@ function formatEntryBreakdown(entry: WorkEntry, currency: string): string {
 export function generateBillingMessage(params: MessageGenerationParams): string {
   const { client, period, workEntries, tone } = params;
   const currency = client.currency || 'EUR';
-  const pendingAmount = subtractMoney(period.totalAmount, period.paidAmount);
   const clientName = client.name.split(' ')[0]; // Nombre de pila
 
   // Ordenar entradas por fecha
   const sortedEntries = [...workEntries].sort((a, b) => a.date.localeCompare(b.date));
+
+  // Calcular totales dinámicos a partir de las entradas seleccionadas
+  const calculatedTotal = sortedEntries.reduce(
+    (sum, e) => addMoney(sum, e.totalAmount ?? e.amount),
+    0
+  );
+  const calculatedHours = Math.round(sortedEntries.reduce((sum, e) => sum + e.hours, 0) * 100) / 100;
+
+  const totalAmount = sortedEntries.length > 0 ? calculatedTotal : period.totalAmount;
+  const totalHours = sortedEntries.length > 0 ? calculatedHours : period.totalHours;
+  const pendingAmount = subtractMoney(totalAmount, period.paidAmount);
 
   // Tono Recordatorio o 2º Recordatorio
   if (tone === 'reminder') {
@@ -99,7 +109,7 @@ Un saludo.`;
 
   const entryListStr = sortedEntries.length > 0
     ? sortedEntries.map(e => formatEntryBreakdown(e, currency)).join('\n\n')
-    : `${formatDateSpanish(period.startDate, { short: true })}: ${formatHours(period.totalHours)} = ${formatCurrency(period.totalAmount, currency)}`;
+    : `${formatDateSpanish(period.startDate, { short: true })}: ${formatHours(totalHours)} = ${formatCurrency(totalAmount, currency)}`;
 
   // Frecuencia diaria
   if (client.billingFrequency === 'daily') {
@@ -110,7 +120,7 @@ Adjunto le envío la liquidación del trabajo realizado hoy (${formatDateSpanish
 
 ${entryListStr}
 
-Total a abonar: ${formatCurrency(period.totalAmount, currency)}
+Total a abonar: ${formatCurrency(totalAmount, currency)}
 
 Quedo a la espera de la confirmación del pago.
 
@@ -123,7 +133,7 @@ Te paso las horas realizadas hoy (${formatDateSpanish(period.startDate, { short:
 
 ${entryListStr}
 
-Total a abonar: ${formatCurrency(period.totalAmount, currency)}
+Total a abonar: ${formatCurrency(totalAmount, currency)}
 
 Gracias.`;
   }
@@ -137,7 +147,7 @@ Le presento el resumen de horas correspondientes a la semana del ${formatDateSpa
 
 ${entryListStr}
 
-Total a abonar: ${formatCurrency(period.totalAmount, currency)}
+Total a abonar: ${formatCurrency(totalAmount, currency)}
 
 Agradecería la tramitación del pago según la tarifa pactada.
 
@@ -150,15 +160,30 @@ Te paso el resumen de las horas realizadas esta semana (${formatDateSpanish(peri
 
 ${entryListStr}
 
-Total semanal: ${formatCurrency(period.totalAmount, currency)}
+Total semanal: ${formatCurrency(totalAmount, currency)}
 
 Gracias.`;
   }
 
   // Frecuencia mensual o personalizada
-  const monthTitle = client.billingFrequency === 'monthly'
-    ? getMonthName(period.startDate)
-    : `periodo del ${formatDateSpanish(period.startDate, { short: true })} al ${formatDateSpanish(period.endDate, { short: true })}`;
+  let monthTitle = '';
+  if (client.billingFrequency === 'monthly') {
+    if (sortedEntries.length > 0) {
+      const minDate = sortedEntries[0].date;
+      const maxDate = sortedEntries[sortedEntries.length - 1].date;
+      const minMonth = minDate.substring(0, 7);
+      const maxMonth = maxDate.substring(0, 7);
+      if (minMonth !== maxMonth) {
+        monthTitle = `el periodo del ${formatDateSpanish(minDate, { short: true })} al ${formatDateSpanish(maxDate, { short: true })}`;
+      } else {
+        monthTitle = getMonthName(period.startDate);
+      }
+    } else {
+      monthTitle = getMonthName(period.startDate);
+    }
+  } else {
+    monthTitle = `periodo del ${formatDateSpanish(period.startDate, { short: true })} al ${formatDateSpanish(period.endDate, { short: true })}`;
+  }
 
   if (isProfessional) {
     return `Estimado/a ${client.name},
@@ -168,7 +193,7 @@ Adjunto le hago llegar el desglose de horas correspondientes al ${monthTitle}:
 ${entryListStr}
 
 Resumen del periodo:
-- Importe total a abonar: ${formatCurrency(period.totalAmount, currency)}
+- Importe total a abonar: ${formatCurrency(totalAmount, currency)}
 
 Quedo a su disposición para cualquier duda.
 
@@ -181,7 +206,7 @@ Te paso el resumen de las horas realizadas durante ${monthTitle}:
 
 ${entryListStr}
 
-Total del periodo: ${formatCurrency(period.totalAmount, currency)}
+Total del periodo: ${formatCurrency(totalAmount, currency)}
 
 Gracias.`;
 }

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { generateBillingMessage } from '../../engine/messageEngine';
-import { MessageTone } from '../../types';
-import { X, Copy, RefreshCw, Send, Check } from 'lucide-react';
+import { MessageTone, WorkEntry } from '../../types';
+import { X, Copy, RefreshCw, Send, Check, CheckSquare, Square, ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { formatDateSpanish } from '../../utils/dateUtils';
+import { formatCurrency, formatHours, addMoney } from '../../engine/moneyEngine';
 
 export const MessageGeneratorModal: React.FC = () => {
   const {
@@ -11,6 +13,7 @@ export const MessageGeneratorModal: React.FC = () => {
     selectedPeriodForMessage,
     clients,
     workEntries,
+    billingPeriods,
     updatePeriodStatus,
     showToast,
   } = useApp();
@@ -18,18 +21,23 @@ export const MessageGeneratorModal: React.FC = () => {
   const [tone, setTone] = useState<MessageTone>('informal');
   const [messageText, setMessageText] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
+  const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
+  const [isSelectionOpen, setIsSelectionOpen] = useState<boolean>(true);
 
   const client = selectedPeriodForMessage
     ? clients.find(c => c.id === selectedPeriodForMessage.clientId)
     : null;
 
-  const periodWorkEntries = selectedPeriodForMessage
-    ? workEntries.filter(w => selectedPeriodForMessage.workEntryIds.includes(w.id))
+  // Obtener todos los trabajos registrados de este cliente
+  const clientWorkEntries = selectedPeriodForMessage
+    ? workEntries
+        .filter(w => w.clientId === selectedPeriodForMessage.clientId)
+        .sort((a, b) => b.date.localeCompare(a.date))
     : [];
 
+  // Al abrir el modal o cambiar de periodo, inicializar la selección por defecto
   useEffect(() => {
     if (client && selectedPeriodForMessage) {
-      // Si el periodo está en atraso o enviado, sugerir tono recordatorio
       let defaultTone: MessageTone = 'informal';
       if (selectedPeriodForMessage.status === 'overdue') {
         defaultTone = 'second_reminder';
@@ -38,10 +46,37 @@ export const MessageGeneratorModal: React.FC = () => {
       }
       setTone(defaultTone);
 
+      // Periodo actual IDs
+      const periodWorkSet = new Set(selectedPeriodForMessage.workEntryIds);
+
+      // Identificar entradas pertenecientes a periodos ya pagados
+      const paidEntryIds = new Set<string>();
+      billingPeriods.forEach(p => {
+        if (p.clientId === client.id && p.status === 'paid') {
+          p.workEntryIds.forEach(id => paidEntryIds.add(id));
+        }
+      });
+
+      // Preseleccionar:
+      // 1. Trabajos pertenecientes al periodo actual
+      // 2. O trabajos del mismo cliente con fecha <= fin de periodo que NO pertenezcan a un periodo ya pagado
+      const defaultSelected = clientWorkEntries
+        .filter(entry => {
+          if (periodWorkSet.has(entry.id)) return true;
+          if (!paidEntryIds.has(entry.id) && entry.date <= selectedPeriodForMessage.endDate) return true;
+          return false;
+        })
+        .map(e => e.id);
+
+      // Fallback si no hubiese por regla 2: usar las del periodo
+      const initialIds = defaultSelected.length > 0 ? defaultSelected : selectedPeriodForMessage.workEntryIds;
+      setSelectedEntryIds(initialIds);
+
+      const activeEntries = clientWorkEntries.filter(w => initialIds.includes(w.id));
       const generated = generateBillingMessage({
         client,
         period: selectedPeriodForMessage,
-        workEntries: periodWorkEntries,
+        workEntries: activeEntries,
         tone: defaultTone,
       });
       setMessageText(generated);
@@ -51,21 +86,48 @@ export const MessageGeneratorModal: React.FC = () => {
 
   if (!isMessageModalOpen || !selectedPeriodForMessage || !client) return null;
 
-  const handleRegenerate = (newTone?: MessageTone) => {
-    const activeTone = newTone || tone;
+  // Recalcular el texto del mensaje cuando cambian las entradas seleccionadas o el tono
+  const updateMessage = (entryIds: string[], activeTone: MessageTone = tone) => {
+    const activeEntries = clientWorkEntries.filter(w => entryIds.includes(w.id));
     const generated = generateBillingMessage({
       client,
       period: selectedPeriodForMessage,
-      workEntries: periodWorkEntries,
+      workEntries: activeEntries,
       tone: activeTone,
     });
     setMessageText(generated);
     setCopied(false);
   };
 
+  const handleToggleEntry = (entryId: string) => {
+    let updated: string[];
+    if (selectedEntryIds.includes(entryId)) {
+      updated = selectedEntryIds.filter(id => id !== entryId);
+    } else {
+      updated = [...selectedEntryIds, entryId];
+    }
+    setSelectedEntryIds(updated);
+    updateMessage(updated);
+  };
+
+  const handleSelectAll = () => {
+    const allIds = clientWorkEntries.map(w => w.id);
+    setSelectedEntryIds(allIds);
+    updateMessage(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedEntryIds([]);
+    updateMessage([]);
+  };
+
   const handleToneChange = (newTone: MessageTone) => {
     setTone(newTone);
-    handleRegenerate(newTone);
+    updateMessage(selectedEntryIds, newTone);
+  };
+
+  const handleRegenerate = () => {
+    updateMessage(selectedEntryIds);
   };
 
   const handleCopy = async () => {
@@ -85,9 +147,16 @@ export const MessageGeneratorModal: React.FC = () => {
     closeMessageModal();
   };
 
+  // Calcular métricas dinámicas de las entradas seleccionadas
+  const selectedEntries = clientWorkEntries.filter(w => selectedEntryIds.includes(w.id));
+  const totalSelectedAmount = selectedEntries.reduce(
+    (sum, e) => addMoney(sum, e.totalAmount ?? e.amount),
+    0
+  );
+
   return (
     <div className="modal-backdrop" onClick={closeMessageModal}>
-      <div className="modal-card" style={{ maxWidth: '620px' }} onClick={e => e.stopPropagation()}>
+      <div className="modal-card" style={{ maxWidth: '640px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
@@ -119,9 +188,211 @@ export const MessageGeneratorModal: React.FC = () => {
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Seccion Selector de Trabajos Registrados */}
+          <div
+            style={{
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              onClick={() => setIsSelectionOpen(!isSelectionOpen)}
+              style={{
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                background: 'var(--bg-card)',
+                userSelect: 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Filter size={15} style={{ color: 'var(--primary)' }} />
+                <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                  Trabajos a Incluir en el Mensaje
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '2px 8px',
+                    borderRadius: 'var(--radius-full)',
+                    background: selectedEntryIds.length > 0 ? 'var(--primary-light)' : 'var(--bg-input)',
+                    color: selectedEntryIds.length > 0 ? 'var(--primary)' : 'var(--text-muted)',
+                    fontWeight: 700,
+                  }}
+                >
+                  {selectedEntryIds.length} / {clientWorkEntries.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--status-paid)' }}>
+                  {formatCurrency(totalSelectedAmount, client.currency || 'EUR')}
+                </span>
+                {isSelectionOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </div>
+
+            {isSelectionOpen && (
+              <div style={{ padding: '12px', borderTop: '1px solid var(--border-color)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '8px',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    Marca o desmarca las jornadas que deseas enviar:
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={handleSelectAll}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--primary)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      Todos
+                    </button>
+                    <span style={{ color: 'var(--border-color)' }}>|</span>
+                    <button
+                      type="button"
+                      onClick={handleDeselectAll}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      Ninguno
+                    </button>
+                  </div>
+                </div>
+
+                {clientWorkEntries.length === 0 ? (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    No hay registros de trabajo para este cliente.
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      maxHeight: '170px',
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      paddingRight: '4px',
+                    }}
+                  >
+                    {clientWorkEntries.map(entry => {
+                      const isSelected = selectedEntryIds.includes(entry.id);
+                      const isInPeriod = selectedPeriodForMessage.workEntryIds.includes(entry.id);
+                      const entryTotal = entry.totalAmount ?? entry.amount;
+
+                      return (
+                        <div
+                          key={entry.id}
+                          onClick={() => handleToggleEntry(entry.id)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 10px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: isSelected ? 'var(--bg-card)' : 'transparent',
+                            border: `1px solid ${isSelected ? 'var(--primary-light)' : 'var(--border-light)'}`,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            <div style={{ color: isSelected ? 'var(--primary)' : 'var(--text-muted)', display: 'flex' }}>
+                              {isSelected ? <CheckSquare size={16} /> : <Square size={16} />}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-main)' }}>
+                                  {formatDateSpanish(entry.date, { short: true, includeYear: true })}
+                                </span>
+                                {isInPeriod ? (
+                                  <span
+                                    style={{
+                                      fontSize: '0.65rem',
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      background: 'var(--primary-light)',
+                                      color: 'var(--primary)',
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    Periodo actual
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      fontSize: '0.65rem',
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      background: 'var(--status-pending-bg)',
+                                      color: 'var(--status-pending)',
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    Anterior/Pendiente
+                                  </span>
+                                )}
+                              </div>
+                              {entry.description && (
+                                <p
+                                  style={{
+                                    fontSize: '0.74rem',
+                                    color: 'var(--text-muted)',
+                                    margin: 0,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: '260px',
+                                  }}
+                                >
+                                  {entry.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                              {formatCurrency(entryTotal, client.currency || 'EUR')}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              {formatHours(entry.hours)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Selector de Tono/Plantilla */}
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">Tono del Mensaje / Plantilla</label>
             <div
               style={{
@@ -159,12 +430,12 @@ export const MessageGeneratorModal: React.FC = () => {
           </div>
 
           {/* Área de Texto Editable */}
-          <div className="form-group">
+          <div className="form-group" style={{ margin: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <label className="form-label">Mensaje Listo para Enviar (Editable)</label>
               <button
                 type="button"
-                onClick={() => handleRegenerate()}
+                onClick={handleRegenerate}
                 style={{
                   background: 'none',
                   border: 'none',
