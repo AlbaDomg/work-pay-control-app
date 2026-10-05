@@ -28,12 +28,13 @@ export const MessageGeneratorModal: React.FC = () => {
     ? clients.find(c => c.id === selectedPeriodForMessage.clientId)
     : null;
 
-  // Obtener todos los trabajos registrados de este cliente
-  const clientWorkEntries = selectedPeriodForMessage
-    ? workEntries
-        .filter(w => w.clientId === selectedPeriodForMessage.clientId)
-        .sort((a, b) => b.date.localeCompare(a.date))
-    : [];
+  // Obtener estrictamente todos los trabajos de ESTE cliente
+  const clientWorkEntries = React.useMemo(() => {
+    if (!selectedPeriodForMessage || !client) return [];
+    return workEntries
+      .filter(w => w.clientId === client.id)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [workEntries, selectedPeriodForMessage, client]);
 
   // Al abrir el modal o cambiar de periodo, inicializar la selección por defecto
   useEffect(() => {
@@ -49,7 +50,7 @@ export const MessageGeneratorModal: React.FC = () => {
       // Periodo actual IDs
       const periodWorkSet = new Set(selectedPeriodForMessage.workEntryIds);
 
-      // Identificar entradas pertenecientes a periodos ya pagados
+      // Identificar entradas pertenecientes a periodos ya pagados DE ESTE CLIENTE
       const paidEntryIds = new Set<string>();
       billingPeriods.forEach(p => {
         if (p.clientId === client.id && p.status === 'paid') {
@@ -57,11 +58,12 @@ export const MessageGeneratorModal: React.FC = () => {
         }
       });
 
-      // Preseleccionar:
+      // Preseleccionar estrictamente de las entradas DE ESTE CLIENTE:
       // 1. Trabajos pertenecientes al periodo actual
-      // 2. O trabajos del mismo cliente con fecha <= fin de periodo que NO pertenezcan a un periodo ya pagado
+      // 2. O trabajos de este mismo cliente con fecha <= fin de periodo que NO pertenezcan a un periodo ya pagado
       const defaultSelected = clientWorkEntries
         .filter(entry => {
+          if (entry.clientId !== client.id) return false;
           if (periodWorkSet.has(entry.id)) return true;
           if (!paidEntryIds.has(entry.id) && entry.date <= selectedPeriodForMessage.endDate) return true;
           return false;
@@ -69,7 +71,10 @@ export const MessageGeneratorModal: React.FC = () => {
         .map(e => e.id);
 
       // Fallback si no hubiese por regla 2: usar las del periodo
-      const initialIds = defaultSelected.length > 0 ? defaultSelected : selectedPeriodForMessage.workEntryIds;
+      const initialIds = defaultSelected.length > 0
+        ? defaultSelected
+        : clientWorkEntries.filter(w => periodWorkSet.has(w.id)).map(w => w.id);
+
       setSelectedEntryIds(initialIds);
 
       const activeEntries = clientWorkEntries.filter(w => initialIds.includes(w.id));
@@ -81,14 +86,19 @@ export const MessageGeneratorModal: React.FC = () => {
       });
       setMessageText(generated);
       setCopied(false);
+    } else {
+      setSelectedEntryIds([]);
     }
-  }, [selectedPeriodForMessage, isMessageModalOpen]);
+  }, [selectedPeriodForMessage?.id, isMessageModalOpen, clientWorkEntries]);
 
   if (!isMessageModalOpen || !selectedPeriodForMessage || !client) return null;
 
   // Recalcular el texto del mensaje cuando cambian las entradas seleccionadas o el tono
   const updateMessage = (entryIds: string[], activeTone: MessageTone = tone) => {
-    const activeEntries = clientWorkEntries.filter(w => entryIds.includes(w.id));
+    if (!client || !selectedPeriodForMessage) return;
+    // Filtrar garantizando que solo se procesen entradas que pertenecen a ESTE cliente
+    const validClientEntryIds = entryIds.filter(id => clientWorkEntries.some(w => w.id === id));
+    const activeEntries = clientWorkEntries.filter(w => validClientEntryIds.includes(w.id));
     const generated = generateBillingMessage({
       client,
       period: selectedPeriodForMessage,
@@ -100,6 +110,9 @@ export const MessageGeneratorModal: React.FC = () => {
   };
 
   const handleToggleEntry = (entryId: string) => {
+    // Asegurar que el ID pertenece a este cliente
+    if (!clientWorkEntries.some(w => w.id === entryId)) return;
+
     let updated: string[];
     if (selectedEntryIds.includes(entryId)) {
       updated = selectedEntryIds.filter(id => id !== entryId);
@@ -111,6 +124,7 @@ export const MessageGeneratorModal: React.FC = () => {
   };
 
   const handleSelectAll = () => {
+    // Seleccionar ÚNICAMENTE los trabajos de ESTE cliente
     const allIds = clientWorkEntries.map(w => w.id);
     setSelectedEntryIds(allIds);
     updateMessage(allIds);
